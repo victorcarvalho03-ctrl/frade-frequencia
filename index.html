@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#c8102e">
+<title>Chamada - Igreja FRADE</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--red:#c8102e;--red-dark:#a00d24;--bg:#f7f7f8;--card:#fff;--text:#1a1a1a;--muted:#6b6b6b;--border:#e5e5e5;--present:#1f7a3f;--present-bg:#e8f5ec}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--red);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:12px}
+header h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.3px}
+header .sub{font-size:11px;opacity:.9;text-transform:uppercase;letter-spacing:.5px}
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:56px;z-index:99}
+.tab{flex:1;padding:14px 8px;text-align:center;border:none;background:none;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .15s}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+main{padding:12px;padding-bottom:90px;max-width:900px;margin:0 auto}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.filters .filter-item:first-child{grid-column:1/-1}
+@media(min-width:640px){.filters{grid-template-columns:1fr 1fr 1fr}.filters .filter-item:first-child{grid-column:auto}}
+.filter-item label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.filter-item select,.filter-item input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:#fff;color:var(--text);font-family:inherit}
+.search{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:12px;font-family:inherit}
+.people{display:flex;flex-direction:column;gap:6px}
+.person{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer;user-select:none;transition:background .15s,border-color .15s}
+.person:active{transform:scale(.99)}
+.person.present{background:var(--present-bg);border-color:var(--present)}
+.person .check{width:26px;height:26px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;transition:all .15s}
+.person.present .check{background:var(--present);border-color:var(--present)}
+.person .info{flex:1;min-width:0}
+.person .name{font-weight:500;font-size:15px;line-height:1.3}
+.person .meta{font-size:12px;color:var(--muted);margin-top:2px}
+.person .badge{font-size:10px;padding:3px 7px;border-radius:4px;background:#f0f0f0;color:var(--muted);text-transform:uppercase;font-weight:600;letter-spacing:.3px;white-space:nowrap;flex-shrink:0}
+.person .badge.visitante{background:#fef3c7;color:#92400e}
+.person .badge.crianca{background:#dbeafe;color:#1e40af}
+.stats-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 -2px 8px rgba(0,0,0,.05);z-index:50;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+body.tab-relatorios .stats-bar{display:none}
+.stat-count{font-weight:700;font-size:15px}
+.stat-status{font-size:13px;color:var(--muted)}
+.stat-status.saved{color:var(--present)}
+.chart-container{background:#fff;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
+.chart-container h3{margin:0 0 12px 0;font-size:15px;font-weight:600}
+.chart-container canvas{max-height:320px}
+.table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f9f9f9;font-weight:600;font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.3px}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafafa}
+.months-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+@media(min-width:500px){.months-grid{grid-template-columns:repeat(6,1fr)}}
+@media(min-width:700px){.months-grid{grid-template-columns:repeat(12,1fr)}}
+.month-chip{padding:8px 4px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;text-align:center;font-weight:500;color:var(--text);font-family:inherit}
+.month-chip.selected{background:var(--red);color:#fff;border-color:var(--red)}
+.section-title{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:600;letter-spacing:.5px;margin:14px 0 8px}
+.loading,.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+#config-warning{background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.select-inline{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:#fff;margin-bottom:12px;font-family:inherit}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Igreja FRADE</h1>
+    <div class="sub">Controle de Frequência</div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="chamada">Chamada</button>
+  <button class="tab" data-tab="relatorios">Relatórios</button>
+</nav>
+
+<main>
+  <section id="tab-chamada">
+    <div id="config-warning" hidden>
+      ⚠ Firebase não configurado. Os dados estão sendo salvos apenas neste dispositivo (localStorage). Configure o Firebase para sincronizar na nuvem.
+    </div>
+    <div class="filters">
+      <div class="filter-item">
+        <label>Data</label>
+        <input type="date" id="input-data">
+      </div>
+      <div class="filter-item">
+        <label>Culto</label>
+        <select id="select-culto"></select>
+      </div>
+      <div class="filter-item">
+        <label>Grupo</label>
+        <select id="select-grupo">
+          <option value="todos">Todos</option>
+          <option value="01">Grupo 01</option>
+          <option value="02">Grupo 02</option>
+        </select>
+      </div>
+    </div>
+    <input type="search" id="input-search" class="search" placeholder="🔍 Buscar pessoa...">
+    <div id="lista-pessoas" class="people"></div>
+  </section>
+
+  <section id="tab-relatorios" hidden>
+    <div class="chart-container">
+      <h3>Filtros</h3>
+      <div class="filters">
+        <div class="filter-item">
+          <label>Ano</label>
+          <select id="report-year"></select>
+        </div>
+        <div class="filter-item">
+          <label>Grupo</label>
+          <select id="report-grupo">
+            <option value="todos">Todos</option>
+            <option value="01">Grupo 01</option>
+            <option value="02">Grupo 02</option>
+          </select>
+        </div>
+      </div>
+      <div class="section-title">Meses (vazio = ano todo)</div>
+      <div class="months-grid" id="months-grid"></div>
+    </div>
+
+    <div class="chart-container">
+      <h3>Frequência por Culto</h3>
+      <canvas id="chart-culto"></canvas>
+      <div id="culto-mais-info" style="margin-top:8px;font-size:13px;color:var(--muted);"></div>
+    </div>
+
+    <div class="chart-container">
+      <h3>Frequência Mensal (ano)</h3>
+      <canvas id="chart-mensal"></canvas>
+    </div>
+
+    <div class="chart-container" id="box-meses-selecionados" hidden>
+      <h3>Meses Selecionados</h3>
+      <canvas id="chart-meses-selecionados"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>Frequência Anual</h3>
+      <canvas id="chart-anual"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>Menor Taxa de Presença</h3>
+      <div class="section-title" style="margin-top:0;">Adolescentes e adultos · mínimo 3 cultos no período</div>
+      <div id="lista-faltosos"></div>
+    </div>
+
+    <div class="chart-container">
+      <h3>Relatório Individual</h3>
+      <select id="select-pessoa-individual" class="select-inline"></select>
+      <div id="relatorio-individual"></div>
+    </div>
+  </section>
+</main>
+
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-count" id="stat-count">0 / 0</div>
+  <div class="stat-status" id="stat-status"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// =========================================================
+// CONFIGURAÇÃO DO FIREBASE
+// Preencha com os dados do SEU projeto (veja instruções).
+// Se deixar em branco, o app salva só neste dispositivo.
+// =========================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyABxiZQIdSIUDMH7kQqHOaAwbTNNcUxTDY",
+  authDomain: "frade-frequencia.firebaseapp.com",
+  projectId: "frade-frequencia",
+  storageBucket: "frade-frequencia.firebasestorage.app",
+  messagingSenderId: "857636881312",
+  appId: "1:857636881312:web:85284c58f79bcae113dac5"
+};
+
+// =========================================================
+// PESSOAS (67 cadastradas)
+// =========================================================
+const PESSOAS = [
+  { id: 1, nome: "ADELIA SOBREIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 2, nome: "ADILSON LICA TIAGO", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 3, nome: "ADRIANA RODRIGUES SOBREIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 4, nome: "AGATHA CANDIDA DA SILVA ROCHA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 5, nome: "AGLAUCIO CAMPOS VAÚNA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 6, nome: "ALEXANDRA ALVES DA SILVA LIMA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 7, nome: "ALZERINA AMALIA DA SILVA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 8, nome: "ANA MARIA LIMA DOS REIS", situacao: "Visitante Frequente", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 9, nome: "ANA MEL LIMA FLORES GUMS", situacao: "Membro não batizado", grupo: "01", categoria: "Criança (Intermediário) 7-11", sexo: "F" },
+  { id: 10, nome: "ANDREIA PEREIRA VIEIRA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 11, nome: "ANTHONY MAYCON SILVA GOMES", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 12, nome: "ANTÔNIA IVANILDA G. SILVA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 13, nome: "ARTHUR CASTRO SOUZA", situacao: "Membro não batizado", grupo: "02", categoria: "Adolescente", sexo: "M" },
+  { id: 14, nome: "DANIEL ORLANDO P. MARAMBIO", situacao: "Visitante Frequente", grupo: "02", categoria: "Jovem", sexo: "M" },
+  { id: 15, nome: "DANIELLE CAROLINA S. SOBREIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 16, nome: "DAVI EMANUEL GOMES DA SILVA", situacao: "Membro não batizado", grupo: "02", categoria: "Criança (Pequeno) 3-7", sexo: "M" },
+  { id: 17, nome: "DEBORA LOPES DE ANDRADE", situacao: "Membro", grupo: "01", categoria: "Jovem", sexo: "F" },
+  { id: 18, nome: "DEJANIRA VIEIRA DE ASSIS", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 19, nome: "DINÁ SILVEIRA DE OLIVEIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 20, nome: "DIOGO DE OLIVEIRA FIGUEIRA", situacao: "Visitante Frequente", grupo: "01", categoria: "Jovem", sexo: "M" },
+  { id: 21, nome: "ELEN ALVES DA SILVA PINHEIRO", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 22, nome: "ELENICE VALENTE DO VALE", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 23, nome: "ELIELSON VIEIRA DE ASSIS", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 24, nome: "FABIANA GOMES DA SILVA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 25, nome: "FERNANDO ANTUNES DA SILVA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 26, nome: "GESIO MARCOS DO VALE", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 27, nome: "GREIDSON MARCELO F. COSTA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 28, nome: "GUSTAVO CASTRO SOUZA", situacao: "Membro", grupo: "02", categoria: "Jovem", sexo: "M" },
+  { id: 29, nome: "HADASSA MONTEIRO M. CARVALHO", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 30, nome: "HELOISA MONTEIRO M. CARVALHO", situacao: "Membro não batizado", grupo: "01", categoria: "Criança (Pequeno) 3-7", sexo: "F" },
+  { id: 31, nome: "HOSANA VALADARES M. TRINDADE", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 32, nome: "ISABELA QUINTINO L. F. SOBREIRA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 33, nome: "JESSYCA CRISTINA SILVA PINTO", situacao: "Membro", grupo: "01", categoria: "Jovem", sexo: "F" },
+  { id: 34, nome: "JHONATAS QUINTANILHA C. ROCHA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 35, nome: "JOZIAS GOMES DE LIMA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 36, nome: "JOÃO DE FREITAS", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 37, nome: "JOÃO GABRIEL FERREIRA CURY", situacao: "Membro não batizado", grupo: "01", categoria: "Criança (Pequeno) 3-7", sexo: "M" },
+  { id: 38, nome: "JOÃO MARCOS VALENTE DO VALE", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 39, nome: "JOÃO VITOR DA SILVA VIEIRA", situacao: "Membro não batizado", grupo: "02", categoria: "Criança (Pequeno) 3-7", sexo: "M" },
+  { id: 40, nome: "KARINA OLIVEIRA L. ANDRADE", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 41, nome: "KELLY MATOS PIRES DA SILVA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 42, nome: "LARISSA GOMES TIAGO VALENTE", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 43, nome: "LUCAS LORRAN R. S. PEREIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 44, nome: "MARCIA LIMA M. NASCIMENTO", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 45, nome: "MARCOS ANTONIO NASCIMENTO", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 46, nome: "MARIA APARECIDA P. CONCEIÇÃO", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 47, nome: "MARIA CECÍLIA S. SOBREIRA", situacao: "Membro não batizado", grupo: "02", categoria: "Criança de Colo 0-3", sexo: "F" },
+  { id: 48, nome: "MARIA EDUARDA LOPES ANDRADE", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 49, nome: "MARIA MADALENA ALVES NOGUEIRA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 50, nome: "MARTA VIEIRA GOMES DE FREITAS", situacao: "Visitante Frequente", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 51, nome: "NAGIB LOPES CURY", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 52, nome: "NICOLE RODRIGUES S. PEREIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 53, nome: "NOEMI RIBEIRO S. OLIVEIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 54, nome: "PATRICIA CRISTINA C. L. SOUZA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
+  { id: 55, nome: "PAULO S. Q. ROCHA", situacao: "Membro não batizado", grupo: "01", categoria: "Criança (Pequeno) 3-7", sexo: "M" },
+  { id: 56, nome: "PAULO SERGIO M. TRINDADE", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 57, nome: "PEDRO ANTÔNIO P. FREITAS", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 58, nome: "PEDRO ANTÔNIO P. F. FILHO", situacao: "Membro não batizado", grupo: "01", categoria: "Criança (Intermediário) 7-11", sexo: "M" },
+  { id: 59, nome: "PEDRO S. Q. ROCHA", situacao: "Membro não batizado", grupo: "01", categoria: "Criança (Intermediário) 7-11", sexo: "M" },
+  { id: 60, nome: "PEDRO HENRIQUE S. VIEIRA", situacao: "Membro", grupo: "02", categoria: "Jovem", sexo: "M" },
+  { id: 61, nome: "RAFAEL RODRIGUES DE CARVALHO", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 62, nome: "RENILDA CARLOS DA SILVA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 63, nome: "STHEFANY TACIANO CURY", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "F" },
+  { id: 64, nome: "TIAGO DA SILVA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "M" },
+  { id: 65, nome: "VICTOR CARVALHO DA SILVA", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 66, nome: "WILSON SIMONAL DE ANDRADE", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
+  { id: 67, nome: "ZELINA VIEIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" }
+];
+
+const CULTOS = ["EBD", "Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sábado"];
+const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+// =========================================================
+// FIREBASE
+// =========================================================
+let USE_FIREBASE = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+let db = null, fs = null;
+
+if (USE_FIREBASE) {
+  try {
+    const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    fs = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app = appMod.initializeApp(FIREBASE_CONFIG);
+    db = fs.getFirestore(app);
+    console.log('✅ Firebase conectado.');
+  } catch (e) {
+    console.error('❌ Falha ao inicializar Firebase:', e);
+    USE_FIREBASE = false;
+    setTimeout(() => {
+      const w = document.getElementById('config-warning');
+      if (w) { w.hidden = false; w.textContent = '⚠ Erro ao conectar ao Firebase. Os dados serão salvos apenas neste dispositivo.'; }
+    }, 100);
+  }
+} else {
+  console.log('ℹ️ Firebase não configurado. Usando localStorage.');
+}
+
+// =========================================================
+// DATASTORE (Firestore ou localStorage)
+// =========================================================
+const DataStore = {
+  async getChamada(data, culto, grupo) {
+    if (USE_FIREBASE) {
+      const ref = fs.doc(db, 'chamadas', `${data}_${culto}_${grupo}`);
+      const snap = await fs.getDoc(ref);
+      return snap.exists() ? (snap.data().presentes || []) : [];
+    }
+    const raw = localStorage.getItem(`chamada_${data}_${culto}_${grupo}`);
+    return raw ? JSON.parse(raw) : [];
+  },
+
+  async togglePresenca(data, culto, grupo, pessoaId, remove) {
+    if (USE_FIREBASE) {
+      const ref = fs.doc(db, 'chamadas', `${data}_${culto}_${grupo}`);
+      const meta = { data, culto, grupo, updatedAt: fs.serverTimestamp() };
+      try {
+        await fs.updateDoc(ref, remove
+          ? { ...meta, presentes: fs.arrayRemove(pessoaId) }
+          : { ...meta, presentes: fs.arrayUnion(pessoaId) });
+      } catch (err) {
+        if (err.code === 'not-found') {
+          await fs.setDoc(ref, { ...meta, presentes: remove ? [] : [pessoaId] });
+        } else { throw err; }
+      }
+      return;
+    }
+    const key = `chamada_${data}_${culto}_${grupo}`;
+    const raw = localStorage.getItem(key);
+    const arr = raw ? JSON.parse(raw) : [];
+    const idx = arr.indexOf(pessoaId);
+    if (remove && idx > -1) arr.splice(idx, 1);
+    if (!remove && idx === -1) arr.push(pessoaId);
+    localStorage.setItem(key, JSON.stringify(arr));
+  },
+
+  async getChamadasPeriodo(startDate, endDate) {
+    if (USE_FIREBASE) {
+      const q = fs.query(
+        fs.collection(db, 'chamadas'),
+        fs.where('data', '>=', startDate),
+        fs.where('data', '<=', endDate)
+      );
+      const snap = await fs.getDocs(q);
+      return snap.docs.map(d => d.data());
+    }
+    const result = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('chamada_')) {
+        const parts = key.slice(8).split('_');
+        const [data, culto, grupo] = parts;
+        if (data >= startDate && data <= endDate) {
+          const ids = JSON.parse(localStorage.getItem(key)) || [];
+          result.push({ data, culto, grupo, presentes: ids });
+        }
+      }
+    }
+    return result;
+  }
+};
+
+// =========================================================
+// ESTADO
+// =========================================================
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+const state = {
+  data: todayISO(),
+  culto: CULTOS[0],
+  grupoView: 'todos',
+  presentes: new Set()
+};
+
+let loadToken = 0;
+let pendingSaves = 0;
+let saveTimer = null;
+let reportCache = { year: null, raw: [] };
+
+// =========================================================
+// UI HELPERS
+// =========================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function setSaveStatus(status) {
+  const el = document.getElementById('stat-status');
+  if (!el) return;
+  if (status === 'saving') {
+    pendingSaves++;
+    el.textContent = '💾 Salvando...';
+    el.className = 'stat-status';
+    if (saveTimer) clearTimeout(saveTimer);
+  } else if (status === 'saved') {
+    pendingSaves = Math.max(0, pendingSaves - 1);
+    if (pendingSaves === 0) {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        el.textContent = '✓ Salvo';
+        el.className = 'stat-status saved';
+      }, 200);
+    }
+  } else if (status === 'error') {
+    pendingSaves = 0;
+    if (saveTimer) clearTimeout(saveTimer);
+    el.textContent = '⚠ Erro ao salvar';
+    el.className = 'stat-status';
+  }
+}
+
+function updateStats() {
+  const pool = state.grupoView === 'todos' ? PESSOAS : PESSOAS.filter(p => p.grupo === state.grupoView);
+  const total = pool.length;
+  const present = pool.filter(p => state.presentes.has(p.id)).length;
+  const el = document.getElementById('stat-count');
+  if (el) el.textContent = `${present} / ${total} presentes`;
+}
+
+// =========================================================
+// CHAMADA
+// =========================================================
+function renderPeople() {
+  const container = document.getElementById('lista-pessoas');
+  const search = (document.getElementById('input-search')?.value || '').toLowerCase().trim();
+
+  let people = PESSOAS;
+  if (state.grupoView !== 'todos') people = people.filter(p => p.grupo === state.grupoView);
+  if (search) people = people.filter(p => p.nome.toLowerCase().includes(search));
+
+  if (people.length === 0) {
+    container.innerHTML = '<div class="empty">Nenhuma pessoa encontrada</div>';
+    updateStats();
+    return;
+  }
+
+  container.innerHTML = people.map(p => {
+    const present = state.presentes.has(p.id);
+    let badge = 'Membro', badgeClass = '';
+    if (p.situacao === 'Visitante Frequente') { badge = 'Visitante'; badgeClass = 'visitante'; }
+    else if (p.categoria.startsWith('Criança')) { badge = p.categoria.replace('Criança ', ''); badgeClass = 'crianca'; }
+    return `<div class="person ${present ? 'present' : ''}" data-id="${p.id}">
+      <div class="check">${present ? '✓' : ''}</div>
+      <div class="info">
+        <div class="name">${p.nome}</div>
+        <div class="meta">Grupo ${p.grupo} · ${p.categoria}</div>
+      </div>
+      <span class="badge ${badgeClass}">${badge}</span>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.person').forEach(el => {
+    el.addEventListener('click', () => togglePerson(parseInt(el.dataset.id)));
+  });
+
+  updateStats();
+}
+
+async function togglePerson(id) {
+  const person = PESSOAS.find(p => p.id === id);
+  if (!person) return;
+
+  const wasPresent = state.presentes.has(id);
+  if (wasPresent) state.presentes.delete(id);
+  else state.presentes.add(id);
+
+  const card = document.querySelector(`.person[data-id="${id}"]`);
+  if (card) {
+    card.classList.toggle('present', !wasPresent);
+    const check = card.querySelector('.check');
+    if (check) check.textContent = !wasPresent ? '✓' : '';
+  }
+  updateStats();
+
+  setSaveStatus('saving');
+  try {
+    await DataStore.togglePresenca(state.data, state.culto, person.grupo, id, wasPresent);
+    setSaveStatus('saved');
+  } catch (e) {
+    console.error(e);
+    setSaveStatus('error');
+    if (wasPresent) state.presentes.add(id);
+    else state.presentes.delete(id);
+    if (card) {
+      card.classList.toggle('present', wasPresent);
+      const check = card.querySelector('.check');
+      if (check) check.textContent = wasPresent ? '✓' : '';
+    }
+    updateStats();
+    showToast('Erro ao salvar. Verifique a conexão.');
+  }
+}
+
+async function loadChamada() {
+  const myToken = ++loadToken;
+  const { data, culto, grupoView } = state;
+
+  document.getElementById('lista-pessoas').innerHTML = '<div class="loading">Carregando...</div>';
+
+  try {
+    const groups = grupoView === 'todos' ? ['01', '02'] : [grupoView];
+    const all = new Set();
+    for (const g of groups) {
+      const ids = await DataStore.getChamada(data, culto, g);
+      for (const id of ids) all.add(id);
+    }
+    if (myToken !== loadToken) return;
+    state.presentes = all;
+    renderPeople();
+  } catch (e) {
+    if (myToken !== loadToken) return;
+    console.error(e);
+    document.getElementById('lista-pessoas').innerHTML = '<div class="empty">Erro ao carregar. Verifique a conexão.</div>';
+  }
+}
+
+// =========================================================
+// RELATÓRIOS
+// =========================================================
+const charts = {};
+
+function destroyChart(name) {
+  if (charts[name]) { charts[name].destroy(); delete charts[name]; }
+}
+
+function populateYearSelect() {
+  const sel = document.getElementById('report-year');
+  const cur = new Date().getFullYear();
+  const years = [];
+  for (let y = cur + 1; y >= cur - 5; y--) years.push(y);
+  sel.innerHTML = years.map(y => `<option value="${y}" ${y === cur ? 'selected' : ''}>${y}</option>`).join('');
+}
+
+function renderMonthChips() {
+  const grid = document.getElementById('months-grid');
+  grid.innerHTML = MESES.map((m, i) => `<button class="month-chip" data-month="${i+1}">${m}</button>`).join('');
+  grid.querySelectorAll('.month-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('selected');
+      loadReports();
+    });
+  });
+}
+
+function getSelectedMonths() {
+  return [...document.querySelectorAll('.month-chip.selected')].map(el => parseInt(el.dataset.month));
+}
+
+async function loadReports() {
+  const year = document.getElementById('report-year').value;
+  if (!year) return;
+  try {
+    const raw = await DataStore.getChamadasPeriodo(`${year}-01-01`, `${year}-12-31`);
+    renderReports(year, raw);
+  } catch (e) {
+    console.error(e);
+    showToast('Erro ao carregar relatórios.');
+  }
+}
+
+function renderReports(year, raw) {
+  reportCache = { year, raw };
+  const grupoFilter = document.getElementById('report-grupo').value;
+  const selectedMonths = getSelectedMonths();
+  const hasMonthFilter = selectedMonths.length > 0;
+
+  let filtered = raw;
+  if (grupoFilter !== 'todos') filtered = filtered.filter(c => c.grupo === grupoFilter);
+  if (hasMonthFilter) filtered = filtered.filter(c => selectedMonths.includes(parseInt(c.data.slice(5, 7))));
+
+  renderChartCulto(filtered);
+  renderChartMensal(raw, grupoFilter);
+  renderChartMesesSelecionados(filtered, selectedMonths, hasMonthFilter);
+  renderChartAnual(grupoFilter);
+  renderFaltosos(filtered);
+  populateIndividualSelect();
+  renderIndividual(grupoFilter, hasMonthFilter ? filtered : null, year);
+}
+
+function computePerCulto(chamadas) {
+  const result = {};
+  for (const c of CULTOS) result[c] = 0;
+  for (const ch of chamadas) {
+    if (ch.culto && result[ch.culto] !== undefined) result[ch.culto] += (ch.presentes || []).length;
+  }
+  return result;
+}
+
+function renderChartCulto(chamadas) {
+  const data = computePerCulto(chamadas);
+  destroyChart('culto');
+  charts.culto = new Chart(document.getElementById('chart-culto'), {
+    type: 'bar',
+    data: {
+      labels: CULTOS,
+      datasets: [{ label: 'Total de presenças', data: CULTOS.map(c => data[c]), backgroundColor: '#c8102e', borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+  let maxCulto = null, maxVal = 0;
+  for (const c of CULTOS) if (data[c] > maxVal) { maxVal = data[c]; maxCulto = c; }
+  const info = document.getElementById('culto-mais-info');
+  info.textContent = maxVal > 0
+    ? `🏆 Mais frequentado no período: ${maxCulto} (${maxVal} presenças)`
+    : 'Sem dados no período selecionado.';
+}
+
+function renderChartMensal(raw, grupoFilter) {
+  let filtered = raw;
+  if (grupoFilter !== 'todos') filtered = filtered.filter(c => c.grupo === grupoFilter);
+  const months = Array(12).fill(0);
+  for (const ch of filtered) {
+    const m = parseInt(ch.data.slice(5, 7));
+    if (m >= 1 && m <= 12) months[m-1] += (ch.presentes || []).length;
+  }
+  destroyChart('mensal');
+  charts.mensal = new Chart(document.getElementById('chart-mensal'), {
+    type: 'line',
+    data: {
+      labels: MESES,
+      datasets: [{
+        label: 'Presenças', data: months,
+        borderColor: '#c8102e', backgroundColor: 'rgba(200,16,46,0.1)',
+        fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#c8102e'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+function renderChartMesesSelecionados(filtered, selectedMonths, hasMonthFilter) {
+  const box = document.getElementById('box-meses-selecionados');
+  if (!hasMonthFilter || selectedMonths.length < 2) {
+    box.hidden = true; destroyChart('meses'); return;
+  }
+  box.hidden = false;
+  const sorted = [...selectedMonths].sort((a, b) => a - b);
+  const byGroup = { '01': Array(12).fill(0), '02': Array(12).fill(0) };
+  for (const ch of filtered) {
+    const m = parseInt(ch.data.slice(5, 7));
+    if (ch.grupo in byGroup) byGroup[ch.grupo][m-1] += (ch.presentes || []).length;
+  }
+  destroyChart('meses');
+  charts.meses = new Chart(document.getElementById('chart-meses-selecionados'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(m => MESES[m-1]),
+      datasets: [
+        { label: 'Grupo 01', data: sorted.map(m => byGroup['01'][m-1]), backgroundColor: '#1e40af', borderRadius: 4 },
+        { label: 'Grupo 02', data: sorted.map(m => byGroup['02'][m-1]), backgroundColor: '#c8102e', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+async function renderChartAnual(grupoFilter) {
+  try {
+    const all = await DataStore.getChamadasPeriodo('2000-01-01', '2100-12-31');
+    const byYear = {};
+    for (const ch of all) {
+      if (grupoFilter !== 'todos' && ch.grupo !== grupoFilter) continue;
+      const y = ch.data.slice(0, 4);
+      byYear[y] = (byYear[y] || 0) + (ch.presentes || []).length;
+    }
+    const years = Object.keys(byYear).sort();
+    destroyChart('anual');
+    charts.anual = new Chart(document.getElementById('chart-anual'), {
+      type: 'bar',
+      data: {
+        labels: years.length ? years : ['Sem dados'],
+        datasets: [{
+          label: 'Presenças no ano',
+          data: years.length ? years.map(y => byYear[y]) : [0],
+          backgroundColor: '#6b7280', borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  } catch (e) { console.error(e); }
+}
+
+function renderFaltosos(chamadas) {
+  const sessionsByGroup = { '01': 0, '02': 0 };
+  for (const ch of chamadas) if (sessionsByGroup[ch.grupo] !== undefined) sessionsByGroup[ch.grupo]++;
+
+  const stats = {};
+  for (const p of PESSOAS) stats[p.id] = { pessoa: p, attended: 0, total: sessionsByGroup[p.grupo] || 0 };
+  for (const ch of chamadas) for (const id of (ch.presentes || [])) if (stats[id]) stats[id].attended++;
+
+  const list = Object.values(stats)
+    .filter(s => s.total >= 3)
+    .filter(s => !s.pessoa.categoria.startsWith('Criança'))
+    .map(s => ({ ...s, rate: s.attended / s.total }))
+    .sort((a, b) => a.rate - b.rate || (b.total - b.attended) - (a.total - a.attended))
+    .slice(0, 15);
+
+  const container = document.getElementById('lista-faltosos');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty">Nenhum dado suficiente no período.</div>';
+    return;
+  }
+  container.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Nome</th><th>Grupo</th><th>Presenças</th><th>Taxa</th></tr></thead>
+    <tbody>${list.map(s => `<tr>
+      <td>${s.pessoa.nome}</td>
+      <td>${s.pessoa.grupo}</td>
+      <td>${s.attended} / ${s.total}</td>
+      <td><strong style="color:${s.rate < 0.5 ? '#c8102e' : '#1f7a3f'}">${(s.rate*100).toFixed(0)}%</strong></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function populateIndividualSelect() {
+  const sel = document.getElementById('select-pessoa-individual');
+  if (!sel) return;
+  const current = sel.value;
+  const sorted = [...PESSOAS].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  sel.innerHTML = sorted.map(p => `<option value="${p.id}">${p.nome} (Grupo ${p.grupo})</option>`).join('');
+  if (current && sorted.find(p => String(p.id) === current)) sel.value = current;
+}
+
+async function renderIndividual(grupoFilter, periodChamadas, year) {
+  const sel = document.getElementById('select-pessoa-individual');
+  const container = document.getElementById('relatorio-individual');
+  if (!sel || !container) return;
+  const personId = parseInt(sel.value);
+  if (!personId) { container.innerHTML = '<div class="empty">Selecione uma pessoa.</div>'; return; }
+  const person = PESSOAS.find(p => p.id === personId);
+  if (!person) return;
+
+  let chamadas = periodChamadas;
+  if (!chamadas) {
+    try {
+      chamadas = await DataStore.getChamadasPeriodo(`${year}-01-01`, `${year}-12-31`);
+      if (grupoFilter !== 'todos') chamadas = chamadas.filter(c => c.grupo === grupoFilter);
+    } catch (e) { container.innerHTML = '<div class="empty">Erro ao carregar.</div>'; return; }
+  }
+
+  const relevant = chamadas.filter(c => c.grupo === person.grupo);
+  const attended = relevant.filter(c => (c.presentes || []).includes(personId));
+  const rate = relevant.length ? (attended.length / relevant.length * 100).toFixed(0) : 0;
+  const history = [...relevant]
+    .sort((a, b) => b.data.localeCompare(a.data) || b.culto.localeCompare(a.culto))
+    .slice(0, 40);
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:#f9f9f9;padding:10px;border-radius:8px;">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;">Presenças</div>
+        <div style="font-size:20px;font-weight:700;">${attended.length} / ${relevant.length}</div>
+      </div>
+      <div style="background:#f9f9f9;padding:10px;border-radius:8px;">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;">Taxa</div>
+        <div style="font-size:20px;font-weight:700;color:${rate < 50 ? '#c8102e' : '#1f7a3f'};">${rate}%</div>
+      </div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Data</th><th>Culto</th><th>Status</th></tr></thead>
+      <tbody>${history.length === 0
+        ? '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sem registros.</td></tr>'
+        : history.map(c => {
+            const wasPresent = (c.presentes || []).includes(personId);
+            return `<tr>
+              <td>${formatDate(c.data)}</td>
+              <td>${c.culto}</td>
+              <td style="color:${wasPresent ? '#1f7a3f' : '#c8102e'};font-weight:600;">${wasPresent ? '✓ Presente' : '✗ Ausente'}</td>
+            </tr>`;
+          }).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+function formatDate(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function rerenderIndividual() {
+  if (!reportCache.year) return;
+  const grupoFilter = document.getElementById('report-grupo').value;
+  const selectedMonths = getSelectedMonths();
+  const hasMonthFilter = selectedMonths.length > 0;
+  let filtered = reportCache.raw;
+  if (grupoFilter !== 'todos') filtered = filtered.filter(c => c.grupo === grupoFilter);
+  if (hasMonthFilter) filtered = filtered.filter(c => selectedMonths.includes(parseInt(c.data.slice(5, 7))));
+  renderIndividual(grupoFilter, hasMonthFilter ? filtered : null, reportCache.year);
+}
+
+// =========================================================
+// TABS & INIT
+// =========================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('tab-chamada').hidden = tab !== 'chamada';
+  document.getElementById('tab-relatorios').hidden = tab !== 'relatorios';
+  document.body.classList.toggle('tab-relatorios', tab === 'relatorios');
+  if (tab === 'relatorios') loadReports();
+}
+
+function init() {
+  if (!USE_FIREBASE) {
+    const w = document.getElementById('config-warning');
+    if (w) w.hidden = false;
+  }
+
+  const dataInput = document.getElementById('input-data');
+  dataInput.value = state.data;
+  dataInput.addEventListener('change', () => { state.data = dataInput.value; loadChamada(); });
+
+  const cultoSelect = document.getElementById('select-culto');
+  cultoSelect.innerHTML = CULTOS.map(c => `<option value="${c}">${c}</option>`).join('');
+  cultoSelect.value = state.culto;
+  cultoSelect.addEventListener('change', () => { state.culto = cultoSelect.value; loadChamada(); });
+
+  const grupoSelect = document.getElementById('select-grupo');
+  grupoSelect.addEventListener('change', () => { state.grupoView = grupoSelect.value; loadChamada(); });
+
+  document.getElementById('input-search').addEventListener('input', renderPeople);
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+  populateYearSelect();
+  renderMonthChips();
+  document.getElementById('report-year').addEventListener('change', loadReports);
+  document.getElementById('report-grupo').addEventListener('change', loadReports);
+  document.getElementById('select-pessoa-individual').addEventListener('change', rerenderIndividual);
+
+  loadChamada();
+}
+
+init();
+</script>
+</body>
+</html>
