@@ -431,21 +431,28 @@ if (USE_FIREBASE) {
 // =========================================================
 const DataStore = {
   async getPessoas() {
-    if (USE_FIREBASE) {
+  if (USE_FIREBASE) {
+    try {
       const snap = await fs.getDocs(fs.collection(db, 'pessoas'));
       if (snap.empty) {
-        // Popula o banco na primeira vez
-        for (const p of PESSOAS_SEED) {
-          await fs.setDoc(fs.doc(db, 'pessoas', String(p.id)), p);
-        }
+        console.log('Semeando banco de dados...');
+        const batch = fs.writeBatch(db); // Envia tudo de uma vez
+        PESSOAS_SEED.forEach(p => {
+          batch.set(fs.doc(db, 'pessoas', String(p.id)), p);
+        });
+        await batch.commit();
         return PESSOAS_SEED;
       }
       return snap.docs.map(d => ({...d.data(), id: parseInt(d.id)})).sort((a,b)=>a.nome.localeCompare(b.nome));
+    } catch (e) {
+      console.error("Erro no Firebase:", e);
+      return PESSOAS_SEED; // Se o Firebase falhar, mostra a lista local para não travar
     }
-    const raw = localStorage.getItem('frade_pessoas');
-    if (!raw) { localStorage.setItem('frade_pessoas', JSON.stringify(PESSOAS_SEED)); return PESSOAS_SEED; }
-    return JSON.parse(raw).sort((a,b)=>a.nome.localeCompare(b.nome));
-  },
+  }
+  const raw = localStorage.getItem('frade_pessoas');
+  if (!raw) { localStorage.setItem('frade_pessoas', JSON.stringify(PESSOAS_SEED)); return PESSOAS_SEED; }
+  return JSON.parse(raw).sort((a,b)=>a.nome.localeCompare(b.nome));
+},
 
   async savePessoa(pessoa) {
     if (USE_FIREBASE) {
