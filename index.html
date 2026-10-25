@@ -407,23 +407,17 @@ if (USE_FIREBASE) {
     fs = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const app = appMod.initializeApp(FIREBASE_CONFIG);
     db = fs.getFirestore(app);
-    
-    // Ativa modo offline (Cache local)
-    fs.enableIndexedDbPersistence(db).catch((err) => {
-        if (err.code == 'failed-precondition') {
-            console.log('Múltiplas abas abertas, offline desativado nesta aba.');
-        } else if (err.code == 'unimplemented') {
-            console.log('Navegador não suporta persistência offline.');
-        }
-    });
-    
-    console.log('✅ Firebase conectado com suporte offline.');
+    console.log('✅ Firebase conectado.');
   } catch (e) {
     console.error('❌ Falha ao inicializar Firebase:', e);
-    USE_FIREBASE = false;
+    document.body.innerHTML = `<div style="padding:20px;color:red;background:#fff;font-family:sans-serif;">
+      <h2>Erro ao conectar ao Firebase</h2>
+      <p>Verifique se as chaves no FIREBASE_CONFIG estão corretas (com aspas e vírgulas).</p>
+      <pre>${e.message}</pre>
+    </div>`;
   }
 } else {
-  console.log('ℹ️ Firebase não configurado. Usando localStorage (sem sincronização).');
+  console.log('ℹ️ Firebase não configurado. Usando localStorage.');
 }
 
 // =========================================================
@@ -435,8 +429,8 @@ const DataStore = {
     try {
       const snap = await fs.getDocs(fs.collection(db, 'pessoas'));
       if (snap.empty) {
-        console.log('Semeando banco de dados...');
-        const batch = fs.writeBatch(db); // Envia tudo de uma vez
+        console.log('Criando lista de pessoas no banco...');
+        const batch = fs.writeBatch(db);
         PESSOAS_SEED.forEach(p => {
           batch.set(fs.doc(db, 'pessoas', String(p.id)), p);
         });
@@ -445,15 +439,15 @@ const DataStore = {
       }
       return snap.docs.map(d => ({...d.data(), id: parseInt(d.id)})).sort((a,b)=>a.nome.localeCompare(b.nome));
     } catch (e) {
-      console.error("Erro no Firebase:", e);
-      return PESSOAS_SEED; // Se o Firebase falhar, mostra a lista local para não travar
+      console.error("Erro no Firebase ao buscar pessoas:", e);
+      alert("Erro no Firebase: " + e.message); // Mostra o erro na tela do celular
+      return PESSOAS_SEED;
     }
   }
   const raw = localStorage.getItem('frade_pessoas');
   if (!raw) { localStorage.setItem('frade_pessoas', JSON.stringify(PESSOAS_SEED)); return PESSOAS_SEED; }
   return JSON.parse(raw).sort((a,b)=>a.nome.localeCompare(b.nome));
 },
-
   async savePessoa(pessoa) {
     if (USE_FIREBASE) {
       await fs.setDoc(fs.doc(db, 'pessoas', String(pessoa.id)), pessoa, { merge: true });
