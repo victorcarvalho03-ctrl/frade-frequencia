@@ -100,7 +100,6 @@ tbody tr:hover{background:#fafafa}
 </nav>
 
 <main>
-  <!-- ABA CHAMADA -->
   <section id="tab-chamada">
     <div id="config-warning" hidden>
       ⚠ Firebase não configurado. Os dados estão sendo salvos apenas neste dispositivo.
@@ -137,13 +136,11 @@ tbody tr:hover{background:#fafafa}
     <div id="lista-pessoas" class="people"><div class="loading">Carregando pessoas...</div></div>
   </section>
 
-  <!-- ABA HISTÓRICO -->
   <section id="tab-historico" hidden>
     <h2 style="font-size:16px;margin:0 0 12px 0;">Chamadas Salvas</h2>
     <div id="lista-historico"><div class="loading">Carregando histórico...</div></div>
   </section>
 
-  <!-- ABA RELATÓRIOS -->
   <section id="tab-relatorios" hidden>
     <div class="chart-container">
       <h3>Filtros</h3>
@@ -205,7 +202,6 @@ tbody tr:hover{background:#fafafa}
     </div>
   </section>
 
-  <!-- ABA PESSOAS -->
   <section id="tab-pessoas" hidden>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <h2 style="font-size:16px;margin:0;">Gerenciar Pessoas</h2>
@@ -232,7 +228,6 @@ tbody tr:hover{background:#fafafa}
   <div class="stat-status" id="stat-status"></div>
 </div>
 
-<!-- MODAL PESSOA (CADASTRO/EDIÇÃO) -->
 <div class="modal-overlay" id="modal-pessoa">
   <div class="modal-content">
     <div class="modal-header">
@@ -283,7 +278,6 @@ tbody tr:hover{background:#fafafa}
   </div>
 </div>
 
-<!-- MODAL HISTÓRICO (VISUALIZAR/EDITAR) -->
 <div class="modal-overlay" id="modal-historico">
   <div class="modal-content">
     <div class="modal-header">
@@ -294,7 +288,6 @@ tbody tr:hover{background:#fafafa}
       <div id="hist-info" style="margin-bottom:12px;font-size:13px;color:var(--muted);"></div>
       
       <div id="hist-view" class="people"></div>
-      
       <div id="hist-edit" class="people" hidden></div>
       
       <button class="btn btn-primary" id="btn-editar-hist" style="width:100%;margin-top:16px;" onclick="ativarEdicaoHist()">Editar esta Chamada</button>
@@ -306,27 +299,18 @@ tbody tr:hover{background:#fafafa}
 <div class="toast" id="toast"></div>
 
 <script type="module">
-  window.addEventListener('error', function(e) {
-  document.body.innerHTML = '<div style="padding:20px;color:white;background:red;font-size:16px;font-family:sans-serif;">' +
-    '<h3>Erro de Código (JavaScript):</h3><p>' + e.message + '</p>' +
-    '<p>Linha: ' + e.lineno + '</p></div>';
-});
 // =========================================================
-// CONFIGURAÇÃO DO FIREBASE (COLE SUAS CHAVES AQUI)
+// COLE SUAS CHAVES DO FIREBASE AQUI
 // =========================================================
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyABxiZQidSIUDMH7kQqHOaAwbTNNCUxTDY",
   authDomain: "frade-frequencia.firebaseapp.com",
   projectId: "frade-frequencia",
-  storageBucket: "frade-frequencia.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abc..."
-};
+  storageBucket: "frade-frequencia.firebasestorage.app",
+  messagingSenderId: "857636881312",
+  appId: "1:857636881312:web:85284c58f79bcae113dac5"
 };
 
-// =========================================================
-// DADOS INICIAIS (Semente para o primeiro acesso ao Firebase)
-// =========================================================
 const PESSOAS_SEED = [
   { id: 1, nome: "ADELIA SOBREIRA", situacao: "Membro", grupo: "02", categoria: "Adulto", sexo: "F" },
   { id: 2, nome: "ADILSON LICA TIAGO", situacao: "Membro", grupo: "01", categoria: "Adulto", sexo: "M" },
@@ -417,7 +401,7 @@ if (USE_FIREBASE) {
     console.error('❌ Falha ao inicializar Firebase:', e);
     document.body.innerHTML = `<div style="padding:20px;color:red;background:#fff;font-family:sans-serif;">
       <h2>Erro ao conectar ao Firebase</h2>
-      <p>Verifique se as chaves no FIREBASE_CONFIG estão corretas (com aspas e vírgulas).</p>
+      <p>Verifique se as chaves no FIREBASE_CONFIG estão corretas.</p>
       <pre>${e.message}</pre>
     </div>`;
   }
@@ -426,33 +410,34 @@ if (USE_FIREBASE) {
 }
 
 // =========================================================
-// DATASTORE (Firestore ou localStorage)
+// DATASTORE
 // =========================================================
 const DataStore = {
   async getPessoas() {
-  if (USE_FIREBASE) {
-    try {
-      const snap = await fs.getDocs(fs.collection(db, 'pessoas'));
-      if (snap.empty) {
-        console.log('Criando lista de pessoas no banco...');
-        const batch = fs.writeBatch(db);
-        PESSOAS_SEED.forEach(p => {
-          batch.set(fs.doc(db, 'pessoas', String(p.id)), p);
-        });
-        await batch.commit();
+    if (USE_FIREBASE) {
+      try {
+        const snap = await fs.getDocs(fs.collection(db, 'pessoas'));
+        if (snap.empty) {
+          console.log('Criando lista de pessoas no banco...');
+          const batch = fs.writeBatch(db);
+          PESSOAS_SEED.forEach(p => {
+            batch.set(fs.doc(db, 'pessoas', String(p.id)), p);
+          });
+          await batch.commit();
+          return PESSOAS_SEED;
+        }
+        return snap.docs.map(d => ({...d.data(), id: parseInt(d.id)})).sort((a,b)=>a.nome.localeCompare(b.nome));
+      } catch (e) {
+        console.error("Erro no Firebase ao buscar pessoas:", e);
+        alert("Erro no Firebase: " + e.message);
         return PESSOAS_SEED;
       }
-      return snap.docs.map(d => ({...d.data(), id: parseInt(d.id)})).sort((a,b)=>a.nome.localeCompare(b.nome));
-    } catch (e) {
-      console.error("Erro no Firebase ao buscar pessoas:", e);
-      alert("Erro no Firebase: " + e.message); // Mostra o erro na tela do celular
-      return PESSOAS_SEED;
     }
-  }
-  const raw = localStorage.getItem('frade_pessoas');
-  if (!raw) { localStorage.setItem('frade_pessoas', JSON.stringify(PESSOAS_SEED)); return PESSOAS_SEED; }
-  return JSON.parse(raw).sort((a,b)=>a.nome.localeCompare(b.nome));
-},
+    const raw = localStorage.getItem('frade_pessoas');
+    if (!raw) { localStorage.setItem('frade_pessoas', JSON.stringify(PESSOAS_SEED)); return PESSOAS_SEED; }
+    return JSON.parse(raw).sort((a,b)=>a.nome.localeCompare(b.nome));
+  },
+
   async savePessoa(pessoa) {
     if (USE_FIREBASE) {
       await fs.setDoc(fs.doc(db, 'pessoas', String(pessoa.id)), pessoa, { merge: true });
@@ -544,13 +529,11 @@ const state = {
   catView: 'todas',
   presentes: new Set(),
   
-  // Histórico Edição
   editHistData: null,
   editHistCulto: null,
   editHistGrupo: null,
   editHistPresentes: new Set(),
 
-  // Ranking
   rankingData: [],
   sortRankingCol: 'rate',
   sortRankingDir: 'desc'
@@ -584,7 +567,7 @@ function setSaveStatus(status) {
       saveTimer = setTimeout(() => { el.textContent = '✓ Salvo'; el.className = 'stat-status saved'; }, 200);
     }
   } else if (status === 'error') {
-    pendingSaves = 0; el.textContent = '⚠ Erro ao salvar (offline?)'; el.className = 'stat-status';
+    pendingSaves = 0; el.textContent = '⚠ Erro ao salvar'; el.className = 'stat-status';
   }
 }
 
@@ -693,7 +676,7 @@ function renderPessoasList() {
     </tr>`).join('');
 }
 
-function abrirModalPessoa(id = null) {
+window.abrirModalPessoa = function(id = null) {
   document.getElementById('modal-pessoa-title').textContent = id ? 'Editar Pessoa' : 'Nova Pessoa';
   if (id) {
     const p = state.pessoas.find(x => x.id === id);
@@ -714,13 +697,13 @@ function abrirModalPessoa(id = null) {
   document.getElementById('modal-pessoa').classList.add('show');
 }
 
-async function salvarPessoa() {
+window.salvarPessoa = async function() {
   const idStr = document.getElementById('pessoa-id').value;
   const nome = document.getElementById('pessoa-nome').value.trim().toUpperCase();
   if (!nome) { showToast('Digite o nome.'); return; }
   
   const p = {
-    id: idStr ? parseInt(idStr) : Date.now(), // Gera ID numérico baseado em timestamp para novos
+    id: idStr ? parseInt(idStr) : Date.now(),
     nome: nome,
     grupo: document.getElementById('pessoa-grupo').value,
     categoria: document.getElementById('pessoa-categoria').value,
@@ -730,9 +713,9 @@ async function salvarPessoa() {
 
   try {
     await DataStore.savePessoa(p);
-    await loadDadosIniciais(); // Recarrega a lista do banco
+    await loadDadosIniciais();
     closeModal('modal-pessoa');
-    showToast('Pessoa salva com sucesso!');
+    showToast('Pessoa salva!');
     if (!document.getElementById('tab-chamada').hidden) renderPeople();
     if (!document.getElementById('tab-relatorios').hidden) loadReports();
   } catch (e) {
@@ -766,7 +749,7 @@ async function loadHistorico() {
   }
 }
 
-async function abrirModalHistorico(data, culto, grupo) {
+window.abrirModalHistorico = async function(data, culto, grupo) {
   state.editHistData = data;
   state.editHistCulto = culto;
   state.editHistGrupo = grupo;
@@ -803,7 +786,7 @@ function renderHistModalPeople(isEditing) {
   }).join('');
 }
 
-function ativarEdicaoHist() {
+window.ativarEdicaoHist = function() {
   document.getElementById('hist-view').hidden = true;
   document.getElementById('hist-edit').hidden = false;
   document.getElementById('btn-editar-hist').style.display = 'none';
@@ -811,13 +794,13 @@ function ativarEdicaoHist() {
   renderHistModalPeople(true);
 }
 
-function toggleHistEdit(id) {
+window.toggleHistEdit = function(id) {
   if (state.editHistPresentes.has(id)) state.editHistPresentes.delete(id);
   else state.editHistPresentes.add(id);
   renderHistModalPeople(true);
 }
 
-async function salvarEdicaoHist() {
+window.salvarEdicaoHist = async function() {
   try {
     await DataStore.saveChamadaCompleta(
       state.editHistData, state.editHistCulto, state.editHistGrupo, 
@@ -958,7 +941,6 @@ function renderChartMesesSelecionados(filtered, selectedMonths, hasMonthFilter) 
   });
 }
 
-// RANKING
 function renderRanking(chamadas) {
   const sessionsByGroup = { '01': 0, '02': 0 };
   chamadas.forEach(ch => { if (sessionsByGroup[ch.grupo] !== undefined) sessionsByGroup[ch.grupo]++; });
@@ -974,7 +956,7 @@ function renderRanking(chamadas) {
   sortRanking(state.sortRankingCol, state.sortRankingDir);
 }
 
-function sortRanking(col, dir = null) {
+window.sortRanking = function(col, dir = null) {
   if (state.sortRankingCol === col) {
     state.sortRankingDir = dir || (state.sortRankingDir === 'desc' ? 'asc' : 'desc');
   } else {
@@ -1005,7 +987,6 @@ function sortRanking(col, dir = null) {
     </tr>`).join('');
 }
 
-// INDIVIDUAL
 function populateIndividualSelect() {
   const sel = document.getElementById('select-pessoa-individual');
   if (!sel) return;
@@ -1091,7 +1072,6 @@ function switchTab(tab) {
 }
 
 async function loadDadosIniciais() {
-  alert("Buscando pessoas no banco...");
   try {
     state.pessoas = await DataStore.getPessoas();
     if (!document.getElementById('tab-chamada').hidden) renderPeople();
@@ -1128,7 +1108,6 @@ async function init() {
   
   document.getElementById('btn-nova-pessoa').addEventListener('click', () => abrirModalPessoa());
 
-  // Carrega as pessoas do banco, depois carrega a chamada
   await loadDadosIniciais();
   loadChamada();
 }
