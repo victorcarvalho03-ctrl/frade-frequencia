@@ -66,6 +66,7 @@ tbody tr:hover{background:#fafafa}
 .btn{padding:10px 16px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
 .btn-primary{background:var(--red);color:#fff}
 .btn-outline{background:#fff;border:1px solid var(--red);color:var(--red)}
+.btn-danger{background:#fff;border:1px solid #c8102e;color:#c8102e;}
 .btn-sm{padding:6px 12px;font-size:12px}
 .history-item{background:#fff;padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;display:flex;flex-direction:column;cursor:pointer;}
 .history-item:hover{background:#fafafa}
@@ -292,7 +293,6 @@ tbody tr:hover{background:#fafafa}
     <div class="modal-body">
       <div id="hist-info" style="margin-bottom:12px;font-size:13px;color:var(--muted);"></div>
       
-      <!-- Campos de edição de data e culto (escondidos por padrão) -->
       <div id="hist-edit-fields" style="display:none; margin-bottom:12px; padding:10px; background:#f9f9f9; border-radius:8px;">
         <div class="form-group">
           <label>Data da Chamada</label>
@@ -304,7 +304,7 @@ tbody tr:hover{background:#fafafa}
         </div>
       </div>
 
-      <select id="hist-filtro" class="select-inline" onchange="renderHistModalPeople()">
+      <select id="hist-filtro" class="select-inline" onchange="window.renderHistModalPeople()">
         <option value="todos">Mostrar Todos</option>
         <option value="01">Apenas Grupo 01</option>
         <option value="02">Apenas Grupo 02</option>
@@ -319,6 +319,9 @@ tbody tr:hover{background:#fafafa}
       
       <button class="btn btn-primary" id="btn-editar-hist" style="width:100%;margin-top:16px;" onclick="window.ativarEdicaoHist()">Editar esta Chamada</button>
       <button class="btn btn-outline" id="btn-salvar-hist" style="width:100%;margin-top:16px;display:none;" onclick="window.salvarEdicaoHist()">Salvar Alterações</button>
+      
+      <!-- Botão de Excluir -->
+      <button class="btn btn-danger" style="width:100%;margin-top:16px;" onclick="window.excluirChamadaHist()">Excluir Chamada</button>
     </div>
   </div>
 </div>
@@ -490,12 +493,14 @@ const DataStore = {
     localStorage.setItem(`chamada_${data}_${culto}_${grupo}`, JSON.stringify(presentesArray));
   },
 
-  async deleteChamada(data, culto, grupo) {
+  async deleteChamadaCompleta(data, culto) {
     if (USE_FIREBASE) {
-      await fs.deleteDoc(fs.doc(db, 'chamadas', `${data}_${culto}_${grupo}`));
+      await fs.deleteDoc(fs.doc(db, 'chamadas', `${data}_${culto}_01`));
+      await fs.deleteDoc(fs.doc(db, 'chamadas', `${data}_${culto}_02`));
       return;
     }
-    localStorage.removeItem(`chamada_${data}_${culto}_${grupo}`);
+    localStorage.removeItem(`chamada_${data}_${culto}_01`);
+    localStorage.removeItem(`chamada_${data}_${culto}_02`);
   },
 
   async togglePresenca(data, culto, grupo, pessoaId, remove) {
@@ -568,17 +573,16 @@ let reportCache = { year: null, raw: [] };
 window.closeModal = function(id) { document.getElementById(id).classList.remove('show'); }
 function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
 
-// Retorna a classe da pessoa com base nas regras
 function getClasse(p) {
   if (p.categoria === 'Adulto') return p.sexo === 'F' ? 'S' : 'V';
   if (p.categoria === 'Jovem') return 'J';
   return 'CIA';
 }
 
-// Agrupa chamadas (data_culto)
 function agruparChamadas(chamadasRaw) {
   const agrupado = {};
   chamadasRaw.forEach(ch => {
+    if (!ch.presentes || ch.presentes.length === 0) return; // Ignora chamadas vazias
     const key = `${ch.data}_${ch.culto}`;
     if (!agrupado[key]) {
       agrupado[key] = { data: ch.data, culto: ch.culto, presentes: new Set(), classes: {V: 0, S: 0, J: 0, CIA: 0} };
@@ -768,15 +772,13 @@ window.abrirModalHistorico = async function(data, culto) {
   document.getElementById('hist-info').innerHTML = `Chamada unificada (G1 e G2)`;
   document.getElementById('hist-edit-fields').style.display = 'none';
   
-  // Reseta os filtros
   document.getElementById('hist-filtro').value = 'todos';
   
-  // Carrega presentes dos dois grupos
   const p1 = await DataStore.getChamada(data, culto, '01');
   const p2 = await DataStore.getChamada(data, culto, '02');
   state.editHistPresentes = new Set([...p1, ...p2]);
   
-  renderHistModalPeople();
+  window.renderHistModalPeople();
   
   document.getElementById('hist-view').hidden = false;
   document.getElementById('hist-edit').hidden = true;
@@ -786,7 +788,7 @@ window.abrirModalHistorico = async function(data, culto) {
   document.getElementById('modal-historico').classList.add('show');
 }
 
-function renderHistModalPeople() {
+window.renderHistModalPeople = function() {
   const container = document.getElementById('hist-edit').hidden ? document.getElementById('hist-view') : document.getElementById('hist-edit');
   const filtro = document.getElementById('hist-filtro').value;
   const isEditing = !document.getElementById('hist-edit').hidden;
@@ -815,13 +817,13 @@ window.ativarEdicaoHist = function() {
   document.getElementById('edit-hist-data').value = state.editHistData;
   document.getElementById('edit-hist-culto').innerHTML = CULTOS.map(c => `<option value="${c}" ${c === state.editHistCulto ? 'selected' : ''}>${c}</option>`).join('');
   
-  renderHistModalPeople();
+  window.renderHistModalPeople();
 }
 
 window.toggleHistEdit = function(id) {
   if (state.editHistPresentes.has(id)) state.editHistPresentes.delete(id);
   else state.editHistPresentes.add(id);
-  renderHistModalPeople();
+  window.renderHistModalPeople();
 }
 
 window.salvarEdicaoHist = async function() {
@@ -829,7 +831,6 @@ window.salvarEdicaoHist = async function() {
   const novoCulto = document.getElementById('edit-hist-culto').value;
   
   try {
-    // Se a data ou culto mudou, precisamos mover os dados
     if (novaData !== state.editHistData || novoCulto !== state.editHistCulto) {
       const p1Antigo = await DataStore.getChamada(state.editHistData, state.editHistCulto, '01');
       const p2Antigo = await DataStore.getChamada(state.editHistData, state.editHistCulto, '02');
@@ -837,18 +838,14 @@ window.salvarEdicaoHist = async function() {
       const presentesG1 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '01');
       const presentesG2 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '02');
 
-      // Salva na nova data/culto
       if (presentesG1.length > 0 || p1Antigo.length > 0) await DataStore.saveChamadaCompleta(novaData, novoCulto, '01', presentesG1);
       if (presentesG2.length > 0 || p2Antigo.length > 0) await DataStore.saveChamadaCompleta(novaData, novoCulto, '02', presentesG2);
 
-      // Apaga da data/culto antiga
-      await DataStore.deleteChamada(state.editHistData, state.editHistCulto, '01');
-      await DataStore.deleteChamada(state.editHistData, state.editHistCulto, '02');
+      await DataStore.deleteChamadaCompleta(state.editHistData, state.editHistCulto);
       
       state.editHistData = novaData;
       state.editHistCulto = novoCulto;
     } else {
-      // Apenas atualizou os presentes na mesma data
       const presentesG1 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '01');
       const presentesG2 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '02');
       
@@ -861,6 +858,18 @@ window.salvarEdicaoHist = async function() {
     loadHistorico();
     if (!document.getElementById('tab-relatorios').hidden) loadReports();
   } catch (e) { console.error(e); showToast('Erro ao salvar alterações.'); }
+}
+
+window.excluirChamadaHist = async function() {
+  if (confirm("Tem certeza que deseja excluir esta chamada permanentemente?")) {
+    try {
+      await DataStore.deleteChamadaCompleta(state.editHistData, state.editHistCulto);
+      showToast('Chamada excluída!');
+      window.closeModal('modal-historico');
+      loadHistorico();
+      if (!document.getElementById('tab-relatorios').hidden) loadReports();
+    } catch (e) { showToast('Erro ao excluir chamada.'); }
+  }
 }
 
 // =========================================================
@@ -906,7 +915,6 @@ function renderReports(year, raw) {
   if (grupoFilter !== 'todos') filtered = filtered.filter(c => c.grupo === grupoFilter);
   if (hasMonthFilter) filtered = filtered.filter(c => selectedMonths.includes(parseInt(c.data.slice(5, 7))));
 
-  // Agrupa os dados filtrados para os gráficos
   const agrupados = agruparChamadas(filtered);
 
   renderChartCulto(agrupados);
@@ -921,7 +929,6 @@ function renderChartCulto(chamadasAgrupadas) {
   const sessoesPorCulto = {}; const presentesPorCulto = {};
   CULTOS.forEach(c => { sessoesPorCulto[c] = 0; presentesPorCulto[c] = 0; });
   
-  // Agora chamadasAgrupadas tem 1 item por data/culto
   for (const ch of chamadasAgrupadas) {
     if (sessoesPorCulto[ch.culto] !== undefined) {
       sessoesPorCulto[ch.culto]++;
@@ -1046,7 +1053,6 @@ async function renderIndividual(grupoFilter, periodChamadas, year) {
     } catch (e) { return; }
   }
 
-  // Aplica filtro de culto se selecionado
   const cultoFilter = selCulto.value;
   let relevant = chamadas.filter(c => c.grupo === person.grupo);
   if (cultoFilter !== 'todos') relevant = relevant.filter(c => c.culto === cultoFilter);
@@ -1144,7 +1150,6 @@ async function init() {
   
   document.getElementById('btn-nova-pessoa').addEventListener('click', () => window.abrirModalPessoa());
   
-  // Toggle do Ranking
   document.getElementById('btn-toggle-ranking').addEventListener('click', (e) => {
     const content = document.getElementById('ranking-content');
     const isHidden = content.hidden;
