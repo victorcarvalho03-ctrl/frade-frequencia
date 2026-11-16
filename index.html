@@ -67,10 +67,12 @@ tbody tr:hover{background:#fafafa}
 .btn-primary{background:var(--red);color:#fff}
 .btn-outline{background:#fff;border:1px solid var(--red);color:var(--red)}
 .btn-sm{padding:6px 12px;font-size:12px}
-.history-item{background:#fff;padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.history-item{background:#fff;padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;display:flex;flex-direction:column;cursor:pointer;}
 .history-item:hover{background:#fafafa}
-.history-info h4{margin:0 0 4px 0;font-size:15px;color:var(--text);}
+.history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.history-info h4{margin:0;font-size:15px;color:var(--text);}
 .history-info p{margin:0;font-size:12px;color:var(--muted);}
+.classes-badge{font-size:11px;color:var(--muted);margin-top:6px;background:#f9f9f9;padding:4px 8px;border-radius:4px;display:inline-block;}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:none;align-items:center;justify-content:center;padding:16px;}
 .modal-overlay.show{display:flex;}
 .modal-content{background:#fff;border-radius:12px;width:100%;max-width:500px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
@@ -168,36 +170,37 @@ tbody tr:hover{background:#fafafa}
       <div id="culto-mais-info" style="margin-top:8px;font-size:13px;color:var(--muted);"></div>
     </div>
 
-    <div class="chart-container">
-      <h3>Presenças Mensais (Total)</h3>
-      <canvas id="chart-mensal"></canvas>
-    </div>
-
     <div class="chart-container" id="box-meses-selecionados" hidden>
       <h3>Meses Selecionados</h3>
       <canvas id="chart-meses-selecionados"></canvas>
     </div>
 
     <div class="chart-container">
-      <h3>Ranking de Frequência</h3>
-      <div class="section-title" style="margin-top:0;">Clique nos títulos para ordenar</div>
-      <div class="table-wrap">
-        <table id="tabela-ranking">
-          <thead>
-            <tr>
-              <th onclick="sortRanking('nome')">Nome <span class="sort-icon" id="sort-nome">▼</span></th>
-              <th onclick="sortRanking('grupo')">Grupo</th>
-              <th onclick="sortRanking('rate')">Frequência <span class="sort-icon" id="sort-rate">▼</span></th>
-            </tr>
-          </thead>
-          <tbody id="tbody-ranking"></tbody>
-        </table>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;">Ranking de Frequência</h3>
+        <button class="btn btn-outline btn-sm" id="btn-toggle-ranking">Ocultar</button>
+      </div>
+      <div id="ranking-content">
+        <div class="section-title" style="margin-top:0;">Clique nos títulos para ordenar</div>
+        <div class="table-wrap">
+          <table id="tabela-ranking">
+            <thead>
+              <tr>
+                <th onclick="sortRanking('nome')">Nome <span class="sort-icon" id="sort-nome">▼</span></th>
+                <th onclick="sortRanking('grupo')">Grupo</th>
+                <th onclick="sortRanking('rate')">Frequência <span class="sort-icon" id="sort-rate">▼</span></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-ranking"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <div class="chart-container">
       <h3>Relatório Individual</h3>
       <select id="select-pessoa-individual" class="select-inline"></select>
+      <select id="select-culto-individual" class="select-inline"></select>
       <div id="relatorio-individual"></div>
     </div>
   </section>
@@ -228,11 +231,12 @@ tbody tr:hover{background:#fafafa}
   <div class="stat-status" id="stat-status"></div>
 </div>
 
+<!-- MODAL PESSOA -->
 <div class="modal-overlay" id="modal-pessoa">
   <div class="modal-content">
     <div class="modal-header">
       <h3 id="modal-pessoa-title">Nova Pessoa</h3>
-      <button class="modal-close" onclick="closeModal('modal-pessoa')">×</button>
+      <button class="modal-close" onclick="window.closeModal('modal-pessoa')">×</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="pessoa-id">
@@ -273,25 +277,48 @@ tbody tr:hover{background:#fafafa}
           <option value="F">Feminino</option>
         </select>
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="salvarPessoa()">Salvar</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="window.salvarPessoa()">Salvar</button>
     </div>
   </div>
 </div>
 
+<!-- MODAL HISTÓRICO -->
 <div class="modal-overlay" id="modal-historico">
   <div class="modal-content">
     <div class="modal-header">
       <h3 id="modal-hist-title">Chamada</h3>
-      <button class="modal-close" onclick="closeModal('modal-historico')">×</button>
+      <button class="modal-close" onclick="window.closeModal('modal-historico')">×</button>
     </div>
     <div class="modal-body">
       <div id="hist-info" style="margin-bottom:12px;font-size:13px;color:var(--muted);"></div>
       
+      <!-- Campos de edição de data e culto (escondidos por padrão) -->
+      <div id="hist-edit-fields" style="display:none; margin-bottom:12px; padding:10px; background:#f9f9f9; border-radius:8px;">
+        <div class="form-group">
+          <label>Data da Chamada</label>
+          <input type="date" id="edit-hist-data">
+        </div>
+        <div class="form-group">
+          <label>Culto</label>
+          <select id="edit-hist-culto"></select>
+        </div>
+      </div>
+
+      <select id="hist-filtro" class="select-inline" onchange="renderHistModalPeople()">
+        <option value="todos">Mostrar Todos</option>
+        <option value="01">Apenas Grupo 01</option>
+        <option value="02">Apenas Grupo 02</option>
+        <option value="V">Apenas Varões (V)</option>
+        <option value="S">Apenas Servas (S)</option>
+        <option value="J">Apenas Jovens (J)</option>
+        <option value="CIA">Apenas CIA (Crianças/Adolescentes)</option>
+      </select>
+
       <div id="hist-view" class="people"></div>
       <div id="hist-edit" class="people" hidden></div>
       
-      <button class="btn btn-primary" id="btn-editar-hist" style="width:100%;margin-top:16px;" onclick="ativarEdicaoHist()">Editar esta Chamada</button>
-      <button class="btn btn-outline" id="btn-salvar-hist" style="width:100%;margin-top:16px;display:none;" onclick="salvarEdicaoHist()">Salvar Alterações</button>
+      <button class="btn btn-primary" id="btn-editar-hist" style="width:100%;margin-top:16px;" onclick="window.ativarEdicaoHist()">Editar esta Chamada</button>
+      <button class="btn btn-outline" id="btn-salvar-hist" style="width:100%;margin-top:16px;display:none;" onclick="window.salvarEdicaoHist()">Salvar Alterações</button>
     </div>
   </div>
 </div>
@@ -406,7 +433,7 @@ if (USE_FIREBASE) {
     </div>`;
   }
 } else {
-  console.log('ℹ️ Firebase não configurado. Usando localStorage.');
+  console.log('ℹ️ Firebase não configurado.');
 }
 
 // =========================================================
@@ -418,19 +445,14 @@ const DataStore = {
       try {
         const snap = await fs.getDocs(fs.collection(db, 'pessoas'));
         if (snap.empty) {
-          console.log('Criando lista de pessoas no banco...');
           const batch = fs.writeBatch(db);
-          PESSOAS_SEED.forEach(p => {
-            batch.set(fs.doc(db, 'pessoas', String(p.id)), p);
-          });
+          PESSOAS_SEED.forEach(p => batch.set(fs.doc(db, 'pessoas', String(p.id)), p));
           await batch.commit();
           return PESSOAS_SEED;
         }
         return snap.docs.map(d => ({...d.data(), id: parseInt(d.id)})).sort((a,b)=>a.nome.localeCompare(b.nome));
       } catch (e) {
-        console.error("Erro no Firebase ao buscar pessoas:", e);
-        alert("Erro no Firebase: " + e.message);
-        return PESSOAS_SEED;
+        console.error(e); return PESSOAS_SEED;
       }
     }
     const raw = localStorage.getItem('frade_pessoas');
@@ -468,14 +490,20 @@ const DataStore = {
     localStorage.setItem(`chamada_${data}_${culto}_${grupo}`, JSON.stringify(presentesArray));
   },
 
+  async deleteChamada(data, culto, grupo) {
+    if (USE_FIREBASE) {
+      await fs.deleteDoc(fs.doc(db, 'chamadas', `${data}_${culto}_${grupo}`));
+      return;
+    }
+    localStorage.removeItem(`chamada_${data}_${culto}_${grupo}`);
+  },
+
   async togglePresenca(data, culto, grupo, pessoaId, remove) {
     if (USE_FIREBASE) {
       const ref = fs.doc(db, 'chamadas', `${data}_${culto}_${grupo}`);
       const meta = { data, culto, grupo, updatedAt: fs.serverTimestamp() };
       try {
-        await fs.updateDoc(ref, remove 
-          ? { ...meta, presentes: fs.arrayRemove(pessoaId) }
-          : { ...meta, presentes: fs.arrayUnion(pessoaId) });
+        await fs.updateDoc(ref, remove ? { ...meta, presentes: fs.arrayRemove(pessoaId) } : { ...meta, presentes: fs.arrayUnion(pessoaId) });
       } catch (err) {
         if (err.code === 'not-found') {
           await fs.setDoc(ref, { ...meta, presentes: remove ? [] : [pessoaId] });
@@ -484,8 +512,7 @@ const DataStore = {
       return;
     }
     const key = `chamada_${data}_${culto}_${grupo}`;
-    const raw = localStorage.getItem(key);
-    const arr = raw ? JSON.parse(raw) : [];
+    const arr = JSON.parse(localStorage.getItem(key)) || [];
     const idx = arr.indexOf(pessoaId);
     if (remove && idx > -1) arr.splice(idx, 1);
     if (!remove && idx === -1) arr.push(pessoaId);
@@ -494,11 +521,7 @@ const DataStore = {
 
   async getChamadasPeriodo(startDate, endDate) {
     if (USE_FIREBASE) {
-      const q = fs.query(
-        fs.collection(db, 'chamadas'),
-        fs.where('data', '>=', startDate),
-        fs.where('data', '<=', endDate)
-      );
+      const q = fs.query(fs.collection(db, 'chamadas'), fs.where('data', '>=', startDate), fs.where('data', '<=', endDate));
       const snap = await fs.getDocs(q);
       return snap.docs.map(d => d.data()).sort((a,b)=>b.data.localeCompare(a.data));
     }
@@ -509,8 +532,7 @@ const DataStore = {
         const parts = key.slice(8).split('_');
         const [data, culto, grupo] = parts;
         if (data >= startDate && data <= endDate) {
-          const ids = JSON.parse(localStorage.getItem(key)) || [];
-          result.push({ data, culto, grupo, presentes: ids });
+          result.push({ data, culto, grupo, presentes: JSON.parse(localStorage.getItem(key)) || [] });
         }
       }
     }
@@ -519,7 +541,7 @@ const DataStore = {
 };
 
 // =========================================================
-// ESTADO GLOBAL E INICIALIZAÇÃO
+// ESTADO E UTILS
 // =========================================================
 const state = {
   pessoas: [],
@@ -531,9 +553,8 @@ const state = {
   
   editHistData: null,
   editHistCulto: null,
-  editHistGrupo: null,
   editHistPresentes: new Set(),
-
+  
   rankingData: [],
   sortRankingCol: 'rate',
   sortRankingDir: 'desc'
@@ -544,12 +565,35 @@ let pendingSaves = 0;
 let saveTimer = null;
 let reportCache = { year: null, raw: [] };
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+window.closeModal = function(id) { document.getElementById(id).classList.remove('show'); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+
+// Retorna a classe da pessoa com base nas regras
+function getClasse(p) {
+  if (p.categoria === 'Adulto') return p.sexo === 'F' ? 'S' : 'V';
+  if (p.categoria === 'Jovem') return 'J';
+  return 'CIA';
 }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// Agrupa chamadas (data_culto)
+function agruparChamadas(chamadasRaw) {
+  const agrupado = {};
+  chamadasRaw.forEach(ch => {
+    const key = `${ch.data}_${ch.culto}`;
+    if (!agrupado[key]) {
+      agrupado[key] = { data: ch.data, culto: ch.culto, presentes: new Set(), classes: {V: 0, S: 0, J: 0, CIA: 0} };
+    }
+    ch.presentes.forEach(id => {
+      agrupado[key].presentes.add(id);
+      const p = state.pessoas.find(x => x.id === id);
+      if (p) {
+        const c = getClasse(p);
+        agrupado[key].classes[c]++;
+      }
+    });
+  });
+  return Object.values(agrupado).sort((a,b)=>b.data.localeCompare(a.data) || b.culto.localeCompare(a.culto));
+}
 
 // =========================================================
 // ABA CHAMADA
@@ -557,18 +601,9 @@ function closeModal(id) { document.getElementById(id).classList.remove('show'); 
 function setSaveStatus(status) {
   const el = document.getElementById('stat-status');
   if (!el) return;
-  if (status === 'saving') {
-    pendingSaves++; el.textContent = '💾 Salvando...'; el.className = 'stat-status';
-    if (saveTimer) clearTimeout(saveTimer);
-  } else if (status === 'saved') {
-    pendingSaves = Math.max(0, pendingSaves - 1);
-    if (pendingSaves === 0) {
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => { el.textContent = '✓ Salvo'; el.className = 'stat-status saved'; }, 200);
-    }
-  } else if (status === 'error') {
-    pendingSaves = 0; el.textContent = '⚠ Erro ao salvar'; el.className = 'stat-status';
-  }
+  if (status === 'saving') { pendingSaves++; el.textContent = '💾 Salvando...'; el.className = 'stat-status'; if (saveTimer) clearTimeout(saveTimer); }
+  else if (status === 'saved') { pendingSaves = Math.max(0, pendingSaves - 1); if (pendingSaves === 0) { if (saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(() => { el.textContent = '✓ Salvo'; el.className = 'stat-status saved'; }, 200); } }
+  else if (status === 'error') { pendingSaves = 0; el.textContent = '⚠ Erro ao salvar'; el.className = 'stat-status'; }
 }
 
 function updateStats() {
@@ -577,9 +612,8 @@ function updateStats() {
     if (state.catView !== 'todas' && !p.categoria.includes(state.catView)) return false;
     return true;
   });
-  const total = pool.length;
   const present = pool.filter(p => state.presentes.has(p.id)).length;
-  document.getElementById('stat-count').textContent = `${present} / ${total} presentes`;
+  document.getElementById('stat-count').textContent = `${present} / ${pool.length} presentes`;
 }
 
 function renderPeople() {
@@ -593,10 +627,7 @@ function renderPeople() {
     return true;
   });
 
-  if (people.length === 0) {
-    container.innerHTML = '<div class="empty">Nenhuma pessoa encontrada.</div>';
-    updateStats(); return;
-  }
+  if (people.length === 0) { container.innerHTML = '<div class="empty">Nenhuma pessoa encontrada.</div>'; updateStats(); return; }
 
   container.innerHTML = people.map(p => {
     const present = state.presentes.has(p.id);
@@ -605,17 +636,12 @@ function renderPeople() {
     else if (p.categoria.startsWith('Criança')) { badge = p.categoria.replace('Criança ', ''); badgeClass = 'crianca'; }
     return `<div class="person ${present ? 'present' : ''}" data-id="${p.id}">
       <div class="check">${present ? '✓' : ''}</div>
-      <div class="info">
-        <div class="name">${p.nome}</div>
-        <div class="meta">Grupo ${p.grupo} · ${p.categoria}</div>
-      </div>
+      <div class="info"><div class="name">${p.nome}</div><div class="meta">Grupo ${p.grupo} · ${p.categoria}</div></div>
       <span class="badge ${badgeClass}">${badge}</span>
     </div>`;
   }).join('');
 
-  container.querySelectorAll('.person').forEach(el => {
-    el.addEventListener('click', () => togglePerson(parseInt(el.dataset.id)));
-  });
+  container.querySelectorAll('.person').forEach(el => el.addEventListener('click', () => togglePerson(parseInt(el.dataset.id))));
   updateStats();
 }
 
@@ -626,10 +652,7 @@ async function togglePerson(id) {
   if (wasPresent) state.presentes.delete(id); else state.presentes.add(id);
 
   const card = document.querySelector(`.person[data-id="${id}"]`);
-  if (card) {
-    card.classList.toggle('present', !wasPresent);
-    card.querySelector('.check').textContent = !wasPresent ? '✓' : '';
-  }
+  if (card) { card.classList.toggle('present', !wasPresent); card.querySelector('.check').textContent = !wasPresent ? '✓' : ''; }
   updateStats();
   setSaveStatus('saving');
   try {
@@ -663,17 +686,14 @@ async function loadChamada() {
 }
 
 // =========================================================
-// ABA PESSOAS (CRUD)
+// ABA PESSOAS
 // =========================================================
 function renderPessoasList() {
   const tbody = document.getElementById('tbody-pessoas');
   tbody.innerHTML = state.pessoas.map(p => `
-    <tr>
-      <td>${p.nome}</td>
-      <td>${p.grupo}</td>
-      <td>${p.situacao}</td>
-      <td style="text-align:right;"><button class="btn btn-outline btn-sm" onclick="abrirModalPessoa(${p.id})">Editar</button></td>
-    </tr>`).join('');
+    <tr><td>${p.nome}</td><td>${p.grupo}</td><td>${p.situacao}</td>
+    <td style="text-align:right;"><button class="btn btn-outline btn-sm" onclick="window.abrirModalPessoa(${p.id})">Editar</button></td></tr>
+  `).join('');
 }
 
 window.abrirModalPessoa = function(id = null) {
@@ -701,7 +721,6 @@ window.salvarPessoa = async function() {
   const idStr = document.getElementById('pessoa-id').value;
   const nome = document.getElementById('pessoa-nome').value.trim().toUpperCase();
   if (!nome) { showToast('Digite o nome.'); return; }
-  
   const p = {
     id: idStr ? parseInt(idStr) : Date.now(),
     nome: nome,
@@ -710,57 +729,54 @@ window.salvarPessoa = async function() {
     situacao: document.getElementById('pessoa-situacao').value,
     sexo: document.getElementById('pessoa-sexo').value
   };
-
   try {
     await DataStore.savePessoa(p);
     await loadDadosIniciais();
-    closeModal('modal-pessoa');
+    window.closeModal('modal-pessoa');
     showToast('Pessoa salva!');
     if (!document.getElementById('tab-chamada').hidden) renderPeople();
     if (!document.getElementById('tab-relatorios').hidden) loadReports();
-  } catch (e) {
-    console.error(e); showToast('Erro ao salvar pessoa.');
-  }
+  } catch (e) { showToast('Erro ao salvar pessoa.'); }
 }
 
 // =========================================================
 // ABA HISTÓRICO
 // =========================================================
-let histCache = [];
-
 async function loadHistorico() {
   const container = document.getElementById('lista-historico');
   try {
-    histCache = await DataStore.getChamadasPeriodo('2000-01-01', '2100-12-31');
-    if (histCache.length === 0) {
-      container.innerHTML = '<div class="empty">Nenhuma chamada salva ainda.</div>'; return;
-    }
-    container.innerHTML = histCache.map(c => `
-      <div class="history-item" onclick="abrirModalHistorico('${c.data}', '${c.culto}', '${c.grupo}')">
-        <div class="history-info">
+    const raw = await DataStore.getChamadasPeriodo('2000-01-01', '2100-12-31');
+    const agrupado = agruparChamadas(raw);
+    if (agrupado.length === 0) { container.innerHTML = '<div class="empty">Nenhuma chamada salva.</div>'; return; }
+    
+    container.innerHTML = agrupado.map(c => `
+      <div class="history-item" onclick="window.abrirModalHistorico('${c.data}', '${c.culto}')">
+        <div class="history-header">
           <h4>${formatDate(c.data)} - ${c.culto}</h4>
-          <p>Grupo ${c.grupo} · ${c.presentes.length} presentes</p>
+          <span style="font-weight:bold; color:var(--red);">${c.presentes.size} presentes</span>
         </div>
-        <div style="color:var(--muted);font-size:20px;">›</div>
+        <div class="classes-badge">V: ${c.classes.V} | S: ${c.classes.S} | J: ${c.classes.J} | CIA: ${c.classes.CIA}</div>
       </div>
     `).join('');
-  } catch (e) {
-    container.innerHTML = '<div class="empty">Erro ao carregar histórico.</div>';
-  }
+  } catch (e) { container.innerHTML = '<div class="empty">Erro ao carregar histórico.</div>'; }
 }
 
-window.abrirModalHistorico = async function(data, culto, grupo) {
+window.abrirModalHistorico = async function(data, culto) {
   state.editHistData = data;
   state.editHistCulto = culto;
-  state.editHistGrupo = grupo;
-  
   document.getElementById('modal-hist-title').textContent = `${formatDate(data)} - ${culto}`;
-  document.getElementById('hist-info').innerHTML = `Grupo ${grupo} | Editando chamada salva`;
+  document.getElementById('hist-info').innerHTML = `Chamada unificada (G1 e G2)`;
+  document.getElementById('hist-edit-fields').style.display = 'none';
   
-  const presentes = await DataStore.getChamada(data, culto, grupo);
-  state.editHistPresentes = new Set(presentes);
+  // Reseta os filtros
+  document.getElementById('hist-filtro').value = 'todos';
   
-  renderHistModalPeople(false);
+  // Carrega presentes dos dois grupos
+  const p1 = await DataStore.getChamada(data, culto, '01');
+  const p2 = await DataStore.getChamada(data, culto, '02');
+  state.editHistPresentes = new Set([...p1, ...p2]);
+  
+  renderHistModalPeople();
   
   document.getElementById('hist-view').hidden = false;
   document.getElementById('hist-edit').hidden = true;
@@ -770,18 +786,20 @@ window.abrirModalHistorico = async function(data, culto, grupo) {
   document.getElementById('modal-historico').classList.add('show');
 }
 
-function renderHistModalPeople(isEditing) {
-  const container = isEditing ? document.getElementById('hist-edit') : document.getElementById('hist-view');
-  const people = state.pessoas.filter(p => p.grupo === state.editHistGrupo);
+function renderHistModalPeople() {
+  const container = document.getElementById('hist-edit').hidden ? document.getElementById('hist-view') : document.getElementById('hist-edit');
+  const filtro = document.getElementById('hist-filtro').value;
+  const isEditing = !document.getElementById('hist-edit').hidden;
+  
+  let people = state.pessoas;
+  if (filtro === '01' || filtro === '02') people = people.filter(p => p.grupo === filtro);
+  else if (filtro !== 'todos') people = people.filter(p => getClasse(p) === filtro);
   
   container.innerHTML = people.map(p => {
     const present = state.editHistPresentes.has(p.id);
-    return `<div class="person ${present ? 'present' : 'absent-view'}" ${isEditing ? `onclick="toggleHistEdit(${p.id})"` : ''}>
+    return `<div class="person ${present ? 'present' : 'absent-view'}" ${isEditing ? `onclick="window.toggleHistEdit(${p.id})"` : ''}>
       <div class="check">${present ? '✓' : '✗'}</div>
-      <div class="info">
-        <div class="name">${p.nome}</div>
-        <div class="meta">${p.categoria}</div>
-      </div>
+      <div class="info"><div class="name">${p.nome}</div><div class="meta">Grupo ${p.grupo} · ${p.categoria}</div></div>
     </div>`;
   }).join('');
 }
@@ -791,26 +809,58 @@ window.ativarEdicaoHist = function() {
   document.getElementById('hist-edit').hidden = false;
   document.getElementById('btn-editar-hist').style.display = 'none';
   document.getElementById('btn-salvar-hist').style.display = 'block';
-  renderHistModalPeople(true);
+  
+  const divFields = document.getElementById('hist-edit-fields');
+  divFields.style.display = 'block';
+  document.getElementById('edit-hist-data').value = state.editHistData;
+  document.getElementById('edit-hist-culto').innerHTML = CULTOS.map(c => `<option value="${c}" ${c === state.editHistCulto ? 'selected' : ''}>${c}</option>`).join('');
+  
+  renderHistModalPeople();
 }
 
 window.toggleHistEdit = function(id) {
   if (state.editHistPresentes.has(id)) state.editHistPresentes.delete(id);
   else state.editHistPresentes.add(id);
-  renderHistModalPeople(true);
+  renderHistModalPeople();
 }
 
 window.salvarEdicaoHist = async function() {
+  const novaData = document.getElementById('edit-hist-data').value;
+  const novoCulto = document.getElementById('edit-hist-culto').value;
+  
   try {
-    await DataStore.saveChamadaCompleta(
-      state.editHistData, state.editHistCulto, state.editHistGrupo, 
-      Array.from(state.editHistPresentes)
-    );
+    // Se a data ou culto mudou, precisamos mover os dados
+    if (novaData !== state.editHistData || novoCulto !== state.editHistCulto) {
+      const p1Antigo = await DataStore.getChamada(state.editHistData, state.editHistCulto, '01');
+      const p2Antigo = await DataStore.getChamada(state.editHistData, state.editHistCulto, '02');
+      
+      const presentesG1 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '01');
+      const presentesG2 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '02');
+
+      // Salva na nova data/culto
+      if (presentesG1.length > 0 || p1Antigo.length > 0) await DataStore.saveChamadaCompleta(novaData, novoCulto, '01', presentesG1);
+      if (presentesG2.length > 0 || p2Antigo.length > 0) await DataStore.saveChamadaCompleta(novaData, novoCulto, '02', presentesG2);
+
+      // Apaga da data/culto antiga
+      await DataStore.deleteChamada(state.editHistData, state.editHistCulto, '01');
+      await DataStore.deleteChamada(state.editHistData, state.editHistCulto, '02');
+      
+      state.editHistData = novaData;
+      state.editHistCulto = novoCulto;
+    } else {
+      // Apenas atualizou os presentes na mesma data
+      const presentesG1 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '01');
+      const presentesG2 = Array.from(state.editHistPresentes).filter(id => state.pessoas.find(x=>x.id===id)?.grupo === '02');
+      
+      await DataStore.saveChamadaCompleta(state.editHistData, state.editHistCulto, '01', presentesG1);
+      await DataStore.saveChamadaCompleta(state.editHistData, state.editHistCulto, '02', presentesG2);
+    }
+    
     showToast('Chamada atualizada!');
-    closeModal('modal-historico');
+    window.closeModal('modal-historico');
     loadHistorico();
     if (!document.getElementById('tab-relatorios').hidden) loadReports();
-  } catch (e) { showToast('Erro ao salvar alterações.'); }
+  } catch (e) { console.error(e); showToast('Erro ao salvar alterações.'); }
 }
 
 // =========================================================
@@ -831,10 +881,7 @@ function renderMonthChips() {
   const grid = document.getElementById('months-grid');
   grid.innerHTML = MESES.map((m, i) => `<button class="month-chip" data-month="${i+1}">${m}</button>`).join('');
   grid.querySelectorAll('.month-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      chip.classList.toggle('selected');
-      loadReports();
-    });
+    chip.addEventListener('click', () => { chip.classList.toggle('selected'); loadReports(); });
   });
 }
 
@@ -859,23 +906,26 @@ function renderReports(year, raw) {
   if (grupoFilter !== 'todos') filtered = filtered.filter(c => c.grupo === grupoFilter);
   if (hasMonthFilter) filtered = filtered.filter(c => selectedMonths.includes(parseInt(c.data.slice(5, 7))));
 
-  renderChartCulto(filtered);
-  renderChartMensal(raw, grupoFilter);
-  renderChartMesesSelecionados(filtered, selectedMonths, hasMonthFilter);
+  // Agrupa os dados filtrados para os gráficos
+  const agrupados = agruparChamadas(filtered);
+
+  renderChartCulto(agrupados);
+  renderChartMesesSelecionados(agrupados, selectedMonths, hasMonthFilter);
   renderRanking(filtered);
   
   populateIndividualSelect();
   renderIndividual(grupoFilter, hasMonthFilter ? filtered : null, year);
 }
 
-function renderChartCulto(chamadas) {
+function renderChartCulto(chamadasAgrupadas) {
   const sessoesPorCulto = {}; const presentesPorCulto = {};
   CULTOS.forEach(c => { sessoesPorCulto[c] = 0; presentesPorCulto[c] = 0; });
   
-  for (const ch of chamadas) {
+  // Agora chamadasAgrupadas tem 1 item por data/culto
+  for (const ch of chamadasAgrupadas) {
     if (sessoesPorCulto[ch.culto] !== undefined) {
       sessoesPorCulto[ch.culto]++;
-      presentesPorCulto[ch.culto] += (ch.presentes || []).length;
+      presentesPorCulto[ch.culto] += ch.presentes.size;
     }
   }
   
@@ -887,10 +937,7 @@ function renderChartCulto(chamadas) {
   destroyChart('culto');
   charts.culto = new Chart(document.getElementById('chart-culto'), {
     type: 'bar',
-    data: {
-      labels: CULTOS,
-      datasets: [{ label: 'Média de Presentes', data: medias, backgroundColor: '#c8102e', borderRadius: 6 }]
-    },
+    data: { labels: CULTOS, datasets: [{ label: 'Média de Presentes', data: medias, backgroundColor: '#c8102e', borderRadius: 6 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   });
   
@@ -901,32 +948,21 @@ function renderChartCulto(chamadas) {
     : 'Sem dados no período.';
 }
 
-function renderChartMensal(raw, grupoFilter) {
-  let filtered = raw;
-  if (grupoFilter !== 'todos') filtered = filtered.filter(c => c.grupo === grupoFilter);
-  const months = Array(12).fill(0);
-  for (const ch of filtered) {
-    const m = parseInt(ch.data.slice(5, 7));
-    if (m >= 1 && m <= 12) months[m-1] += (ch.presentes || []).length;
-  }
-  destroyChart('mensal');
-  charts.mensal = new Chart(document.getElementById('chart-mensal'), {
-    type: 'line',
-    data: { labels: MESES, datasets: [{ label: 'Presenças', data: months, borderColor: '#c8102e', backgroundColor: 'rgba(200,16,46,0.1)', fill: true, tension: 0.3 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-  });
-}
-
-function renderChartMesesSelecionados(filtered, selectedMonths, hasMonthFilter) {
+function renderChartMesesSelecionados(chamadasAgrupadas, selectedMonths, hasMonthFilter) {
   const box = document.getElementById('box-meses-selecionados');
   if (!hasMonthFilter || selectedMonths.length < 2) { box.hidden = true; destroyChart('meses'); return; }
   box.hidden = false;
   const sorted = [...selectedMonths].sort((a, b) => a - b);
   const byGroup = { '01': Array(12).fill(0), '02': Array(12).fill(0) };
-  for (const ch of filtered) {
+  
+  chamadasAgrupadas.forEach(ch => {
     const m = parseInt(ch.data.slice(5, 7));
-    if (ch.grupo in byGroup) byGroup[ch.grupo][m-1] += (ch.presentes || []).length;
-  }
+    ch.presentes.forEach(id => {
+      const p = state.pessoas.find(x => x.id === id);
+      if (p && byGroup[p.grupo]) byGroup[p.grupo][m-1]++;
+    });
+  });
+
   destroyChart('meses');
   charts.meses = new Chart(document.getElementById('chart-meses-selecionados'), {
     type: 'bar',
@@ -941,28 +977,21 @@ function renderChartMesesSelecionados(filtered, selectedMonths, hasMonthFilter) 
   });
 }
 
-function renderRanking(chamadas) {
-  const sessionsByGroup = { '01': 0, '02': 0 };
-  chamadas.forEach(ch => { if (sessionsByGroup[ch.grupo] !== undefined) sessionsByGroup[ch.grupo]++; });
+function renderRanking(chamadasRaw) {
+  const sessoesPorGrupo = { '01': 0, '02': 0 };
+  chamadasRaw.forEach(ch => { if (sessoesPorGrupo[ch.grupo] !== undefined) sessoesPorGrupo[ch.grupo]++; });
 
   const stats = {};
-  state.pessoas.forEach(p => stats[p.id] = { pessoa: p, attended: 0, total: sessionsByGroup[p.grupo] || 0 });
-  chamadas.forEach(ch => ch.presentes.forEach(id => { if (stats[id]) stats[id].attended++; }));
+  state.pessoas.forEach(p => stats[p.id] = { pessoa: p, attended: 0, total: sessoesPorGrupo[p.grupo] || 0 });
+  chamadasRaw.forEach(ch => ch.presentes.forEach(id => { if (stats[id]) stats[id].attended++; }));
 
-  state.rankingData = Object.values(stats).map(s => ({
-    ...s, rate: s.total > 0 ? (s.attended / s.total * 100) : 0
-  }));
-  
+  state.rankingData = Object.values(stats).map(s => ({ ...s, rate: s.total > 0 ? (s.attended / s.total * 100) : 0 }));
   sortRanking(state.sortRankingCol, state.sortRankingDir);
 }
 
 window.sortRanking = function(col, dir = null) {
-  if (state.sortRankingCol === col) {
-    state.sortRankingDir = dir || (state.sortRankingDir === 'desc' ? 'asc' : 'desc');
-  } else {
-    state.sortRankingCol = col;
-    state.sortRankingDir = dir || 'desc';
-  }
+  if (state.sortRankingCol === col) state.sortRankingDir = dir || (state.sortRankingDir === 'desc' ? 'asc' : 'desc');
+  else { state.sortRankingCol = col; state.sortRankingDir = dir || 'desc'; }
   
   document.getElementById('sort-nome').textContent = state.sortRankingCol === 'nome' ? (state.sortRankingDir === 'asc' ? '▲' : '▼') : '';
   document.getElementById('sort-rate').textContent = state.sortRankingCol === 'rate' ? (state.sortRankingDir === 'asc' ? '▲' : '▼') : '';
@@ -972,7 +1001,6 @@ window.sortRanking = function(col, dir = null) {
     if (col === 'nome') { vA = a.pessoa.nome; vB = b.pessoa.nome; }
     else if (col === 'grupo') { vA = a.pessoa.grupo; vB = b.pessoa.grupo; }
     else { vA = a.rate; vB = b.rate; }
-
     if (vA < vB) return state.sortRankingDir === 'asc' ? -1 : 1;
     if (vA > vB) return state.sortRankingDir === 'asc' ? 1 : -1;
     return 0;
@@ -981,8 +1009,7 @@ window.sortRanking = function(col, dir = null) {
   const tbody = document.getElementById('tbody-ranking');
   tbody.innerHTML = state.rankingData.map(s => `
     <tr>
-      <td>${s.pessoa.nome}</td>
-      <td>${s.pessoa.grupo}</td>
+      <td>${s.pessoa.nome}</td><td>${s.pessoa.grupo}</td>
       <td style="font-weight:700; color:${s.rate < 50 ? '#c8102e' : '#1f7a3f'};">${s.rate.toFixed(0)}%</td>
     </tr>`).join('');
 }
@@ -993,10 +1020,17 @@ function populateIndividualSelect() {
   const current = sel.value;
   sel.innerHTML = state.pessoas.map(p => `<option value="${p.id}">${p.nome} (Grupo ${p.grupo})</option>`).join('');
   if (current && state.pessoas.find(p => String(p.id) === current)) sel.value = current;
+  
+  const selCulto = document.getElementById('select-culto-individual');
+  if (selCulto.options.length === 0) {
+    selCulto.innerHTML = `<option value="todos">Todos os Cultos</option>` + CULTOS.map(c => `<option value="${c}">${c}</option>`).join('');
+    selCulto.addEventListener('change', rerenderIndividual);
+  }
 }
 
 async function renderIndividual(grupoFilter, periodChamadas, year) {
   const sel = document.getElementById('select-pessoa-individual');
+  const selCulto = document.getElementById('select-culto-individual');
   const container = document.getElementById('relatorio-individual');
   if (!sel || !container) return;
   const personId = parseInt(sel.value);
@@ -1012,7 +1046,11 @@ async function renderIndividual(grupoFilter, periodChamadas, year) {
     } catch (e) { return; }
   }
 
-  const relevant = chamadas.filter(c => c.grupo === person.grupo);
+  // Aplica filtro de culto se selecionado
+  const cultoFilter = selCulto.value;
+  let relevant = chamadas.filter(c => c.grupo === person.grupo);
+  if (cultoFilter !== 'todos') relevant = relevant.filter(c => c.culto === cultoFilter);
+
   const attended = relevant.filter(c => (c.presentes || []).includes(personId));
   const rate = relevant.length ? (attended.length / relevant.length * 100).toFixed(0) : 0;
   const history = [...relevant].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 40);
@@ -1030,7 +1068,7 @@ async function renderIndividual(grupoFilter, periodChamadas, year) {
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Data</th><th>Culto</th><th>Status</th></tr></thead>
-      <tbody>${history.length === 0 ? '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sem registros.</td></tr>' : history.map(c => {
+      <tbody>${history.length === 0 ? '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Sem registros para este filtro.</td></tr>' : history.map(c => {
         const wasPresent = (c.presentes || []).includes(personId);
         return `<tr>
           <td>${formatDate(c.data)}</td><td>${c.culto}</td>
@@ -1052,12 +1090,13 @@ function rerenderIndividual() {
 }
 
 function formatDate(iso) {
+  if(!iso) return '';
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
 
 // =========================================================
-// TABS & INICIALIZAÇÃO
+// TABS & INIT
 // =========================================================
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -1077,10 +1116,7 @@ async function loadDadosIniciais() {
     if (!document.getElementById('tab-chamada').hidden) renderPeople();
     if (!document.getElementById('tab-pessoas').hidden) renderPessoasList();
     populateIndividualSelect();
-  } catch (e) {
-    console.error("Erro ao buscar pessoas:", e);
-    showToast("Erro ao carregar lista de membros.");
-  }
+  } catch (e) { console.error(e); showToast("Erro ao carregar membros."); }
 }
 
 async function init() {
@@ -1106,7 +1142,15 @@ async function init() {
   document.getElementById('report-grupo').addEventListener('change', loadReports);
   document.getElementById('select-pessoa-individual').addEventListener('change', rerenderIndividual);
   
-  document.getElementById('btn-nova-pessoa').addEventListener('click', () => abrirModalPessoa());
+  document.getElementById('btn-nova-pessoa').addEventListener('click', () => window.abrirModalPessoa());
+  
+  // Toggle do Ranking
+  document.getElementById('btn-toggle-ranking').addEventListener('click', (e) => {
+    const content = document.getElementById('ranking-content');
+    const isHidden = content.hidden;
+    content.hidden = !isHidden;
+    e.target.textContent = isHidden ? 'Ocultar' : 'Mostrar Ranking';
+  });
 
   await loadDadosIniciais();
   loadChamada();
